@@ -29,6 +29,7 @@
 #include "lib/framework/file.h"
 #include "lib/sound/audio.h"
 #include "lib/sound/cdaudio.h"
+#include "lib/sound/mission_music.h"
 #include "lib/netplay/netplay.h"
 #include "objmem.h"
 #include "qtscript.h"
@@ -880,6 +881,89 @@ wzapi::no_return_value wzapi::hackStopIngameAudio(WZAPI_NO_PARAMS)
 	debug(LOG_SOUND, "Script wanted music to stop");
 	cdAudio_Stop();
 	return {};
+}
+
+//-- ## playMissionMusicStem(id, filename[, options])
+//--
+//-- Queue a campaign mission music stem for layered playback. `options` is an
+//-- object with optional `volume`, `fadeMs`, and `loop` keys. Volume is clamped
+//-- to `0.0..1.0`; negative fade values are rejected. Runtime audio failures
+//-- return `false` and log, and scripts should not gate mission progress on the
+//-- result.
+//--
+//-- Example:
+//--
+//-- ```js
+//-- playMissionMusicStem("relay_pulse", "audio/music/relay_pulse.ogg", {
+//--     volume: 0.8,
+//--     fadeMs: 1500,
+//--     loop: true,
+//-- });
+//-- ```
+//--
+bool wzapi::playMissionMusicStem(WZAPI_PARAMS(std::string id, std::string filename, double volume, int fadeMs, bool loop))
+{
+	SCRIPT_ASSERT(false, context, !id.empty(), "Mission music stem id must not be empty");
+	SCRIPT_ASSERT(false, context, !filename.empty(), "Mission music stem filename must not be empty");
+	SCRIPT_ASSERT(false, context, std::isfinite(volume), "Mission music stem volume must be finite");
+	SCRIPT_ASSERT(false, context, fadeMs >= 0, "Mission music stem fade must not be negative");
+
+	return missionMusic_PlayStem(MissionMusicStemSpec{
+		MissionMusicStemId(std::move(id)),
+		std::move(filename),
+		MissionMusicStemVolume::fromClamped(volume),
+		std::chrono::milliseconds(fadeMs),
+		loop
+	});
+}
+
+//-- ## setMissionMusicStemVolume(id, options)
+//--
+//-- Queue a volume change for an active campaign mission music stem. `options`
+//-- must contain `volume` and may contain `fadeMs`.
+//--
+bool wzapi::setMissionMusicStemVolume(WZAPI_PARAMS(std::string id, double volume, int fadeMs))
+{
+	SCRIPT_ASSERT(false, context, !id.empty(), "Mission music stem id must not be empty");
+	SCRIPT_ASSERT(false, context, std::isfinite(volume), "Mission music stem volume must be finite");
+	SCRIPT_ASSERT(false, context, fadeMs >= 0, "Mission music stem fade must not be negative");
+
+	return missionMusic_SetStemVolume(MissionMusicStemId(std::move(id)), MissionMusicStemVolume::fromClamped(volume), std::chrono::milliseconds(fadeMs));
+}
+
+//-- ## stopMissionMusicStem(id[, options])
+//--
+//-- Queue a stop or fade-out for a campaign mission music stem. `options` may
+//-- contain `fadeMs`.
+//--
+bool wzapi::stopMissionMusicStem(WZAPI_PARAMS(std::string id, int fadeMs))
+{
+	SCRIPT_ASSERT(false, context, !id.empty(), "Mission music stem id must not be empty");
+	SCRIPT_ASSERT(false, context, fadeMs >= 0, "Mission music stem fade must not be negative");
+
+	return missionMusic_StopStem(MissionMusicStemId(std::move(id)), std::chrono::milliseconds(fadeMs));
+}
+
+//-- ## stopAllMissionMusicStems([options])
+//--
+//-- Queue a stop or fade-out for all campaign mission music stems. `options`
+//-- may contain `fadeMs`.
+//--
+wzapi::no_return_value wzapi::stopAllMissionMusicStems(WZAPI_PARAMS(int fadeMs))
+{
+	SCRIPT_ASSERT({}, context, fadeMs >= 0, "Mission music stem fade must not be negative");
+	missionMusic_StopAllStems(std::chrono::milliseconds(fadeMs));
+	return {};
+}
+
+//-- ## isMissionMusicStemPlaying(id)
+//--
+//-- Returns true while a campaign mission music stem is active or fading out.
+//--
+bool wzapi::isMissionMusicStemPlaying(WZAPI_PARAMS(std::string id))
+{
+	SCRIPT_ASSERT(false, context, !id.empty(), "Mission music stem id must not be empty");
+	return missionMusic_IsStemPlaying(MissionMusicStemId(std::move(id)));
 }
 
 //-- ## hackMarkTiles([label | x, y[, x2, y2]])

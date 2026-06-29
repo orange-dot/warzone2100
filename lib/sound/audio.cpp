@@ -32,6 +32,7 @@
 #include "aud.h"
 #include "audio.h"
 #include "audio_id.h"
+#include "mission_music.h"
 #include "openal_error.h"
 #include "mixer.h"
 
@@ -158,6 +159,8 @@ bool audio_Shutdown(void)
 	{
 		return true;
 	}
+
+	missionMusic_StopAllNow();
 
 	bOK = sound_Shutdown();
 
@@ -571,6 +574,7 @@ void audio_Update()
 		return IterationResult::CONTINUE_ITERATION;
 	});
 
+	missionMusic_Update();
 	sound_Update();
 	return;
 }
@@ -946,6 +950,8 @@ void audio_setPause(const bool state)
 //
 void audio_StopAll(void)
 {
+	missionMusic_StopAllNow();
+
 	// return if audio not enabled
 	if (audio_Disabled())
 	{

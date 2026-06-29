@@ -11,6 +11,7 @@ OPTION(WZ_BUILTIN_MODS_CAMCLASSIC "Include the classic campaign balance mod" ON)
 OPTION(WZ_BUILTIN_MODS_CAMPUMPKIN "Include the pumpkin campaign balance mod" ON)
 OPTION(WZ_BUILTIN_MODS_RECLAMATION "Include the addon campaign: Reclamation" ${_default_bundled_addon_mod_option_value})
 OPTION(WZ_BUILTIN_MODS_FRACTUREDKINGDOM "Include the addon campaign: Fractured Kingdom" ${_default_bundled_addon_mod_option_value})
+OPTION(WZ_BUILTIN_MODS_SIGNALDIASPORA "Include the addon campaign: Signal Diaspora" ${_default_bundled_addon_mod_option_value})
 
 # Note: Always package mods as actual zip files, *even for Emscripten builds*
 find_package(ZIP REQUIRED)
@@ -239,6 +240,13 @@ if (WZ_BUILTIN_MODS_FRACTUREDKINGDOM)
 	PACKAGE_ADDON_CAMPAIGN("${CMAKE_CURRENT_SOURCE_DIR}/campaign/fractured-kingdom" "${CMAKE_CURRENT_BINARY_DIR}/campaign/fractured_kingdom.wz")
 
 endif(WZ_BUILTIN_MODS_FRACTUREDKINGDOM)
+
+if (WZ_BUILTIN_MODS_SIGNALDIASPORA)
+
+	# Addon campaign: Signal Diaspora
+	PACKAGE_ADDON_CAMPAIGN("${CMAKE_CURRENT_SOURCE_DIR}/campaign/signal-diaspora" "${CMAKE_CURRENT_BINARY_DIR}/campaign/signal_diaspora.wz")
+
+endif(WZ_BUILTIN_MODS_SIGNALDIASPORA)
 
 ####################################################
 

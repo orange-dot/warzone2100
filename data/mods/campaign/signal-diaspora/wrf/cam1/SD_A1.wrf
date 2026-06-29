@@ -1,0 +1,7 @@
+/*
+ * SD_A1.wrf
+ */
+
+directory	"script"
+file		JAVASCRIPT	"rules.js"
+file		JAVASCRIPT	"signal-diaspora.js"

@@ -1015,6 +1015,11 @@ namespace wzapi
 	no_return_value hackDoNotSave(WZAPI_PARAMS(std::string name));
 	no_return_value hackPlayIngameAudio(WZAPI_NO_PARAMS);
 	no_return_value hackStopIngameAudio(WZAPI_NO_PARAMS);
+	bool playMissionMusicStem(WZAPI_PARAMS(std::string id, std::string filename, double volume, int fadeMs, bool loop));
+	bool setMissionMusicStemVolume(WZAPI_PARAMS(std::string id, double volume, int fadeMs));
+	bool stopMissionMusicStem(WZAPI_PARAMS(std::string id, int fadeMs));
+	no_return_value stopAllMissionMusicStems(WZAPI_PARAMS(int fadeMs));
+	bool isMissionMusicStemPlaying(WZAPI_PARAMS(std::string id));
 	no_return_value hackMarkTiles(WZAPI_PARAMS(optional<label_or_position_values> _tilePosOrArea));
 
 	// General functions -- geared for use in AI scripts

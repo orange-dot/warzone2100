@@ -354,6 +354,43 @@ Stop the in-game music. (3.3+ only)
 This should be called from the eventStartLevel() event (or later).
 Currently only used from the tutorial.
 
+## playMissionMusicStem(id, filename[, options])
+
+Queue a campaign mission music stem for layered playback. `options` is an
+object with optional `volume`, `fadeMs`, and `loop` keys. Volume is clamped to
+`0.0..1.0`; negative fade values are rejected. Runtime audio failures return
+`false` and log, and scripts should not gate mission progress on the result.
+
+Example:
+
+```js
+playMissionMusicStem("relay_pulse", "audio/music/relay_pulse.ogg", {
+	volume: 0.8,
+	fadeMs: 1500,
+	loop: true,
+});
+```
+
+## setMissionMusicStemVolume(id, options)
+
+Queue a volume change for an active campaign mission music stem. `options`
+must contain `volume` and may contain `fadeMs`.
+
+## stopMissionMusicStem(id[, options])
+
+Queue a stop or fade-out for a campaign mission music stem. `options` may
+contain `fadeMs`.
+
+## stopAllMissionMusicStems([options])
+
+Queue a stop or fade-out for all campaign mission music stems. `options` may
+contain `fadeMs`.
+
+## isMissionMusicStemPlaying(id)
+
+Returns true while the named campaign mission music stem is active or fading
+out.
+
 ## hackMarkTiles([label | x, y[, x2, y2]])
 
 Mark the given tile(s) on the map. Either give a ```POSITION``` or ```AREA``` label,
@@ -900,4 +937,3 @@ Set a key + value string associated with a player, to be output to the playerDat
 
 Transform a player to a spectator. (4.2+ only)
 This is a one-time transformation, destroys the player's HQ and all of their remaining units, and must occur deterministically on all clients.
-

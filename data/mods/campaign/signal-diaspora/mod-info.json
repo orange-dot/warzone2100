@@ -1,0 +1,17 @@
+{
+  "name": "Signal Diaspora",
+  "version": "0.1.0",
+  "author": "Mamut",
+  "type": "alternateCampaign",
+  "license": "GPL-2.0-or-later",
+  "minVersionSupported": "0.0.0",
+  "maxVersionTested": "4.5.5",
+  "description": {
+     "en": "A relay-restoration campaign prototype built to test adaptive mission music stems."
+  },
+  "campaigns": [
+    "signaldiaspora.json"
+  ],
+  "universe": "unique",
+  "difficultyLevels": "default"
+}

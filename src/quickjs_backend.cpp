@@ -78,6 +78,7 @@
 
 #include <unordered_set>
 #include "lib/framework/file.h"
+#include <cmath>
 #include <unordered_map>
 #include <limits>
 
@@ -3340,6 +3341,215 @@ IMPL_JS_FUNC(getRevealStatus, wzapi::getRevealStatus)
 IMPL_JS_FUNC(setRevealStatus, wzapi::setRevealStatus)
 IMPL_JS_FUNC(setGameStoryLogPlayerDataValue, wzapi::setGameStoryLogPlayerDataValue)
 
+struct MissionMusicJSOptions
+{
+	double volume = 1.0;
+	bool hasVolume = false;
+	int32_t fadeMs = 0;
+	bool loop = true;
+};
+
+static JSValue jsMissionMusicError(JSContext *ctx, const char *message)
+{
+	debug(LOG_ERROR, "%s", message);
+	ASSERT(false, "%s", message);
+	return JS_NewBool(ctx, false);
+}
+
+static bool jsMissionMusicReadString(JSContext *ctx, JSValueConst value, const char *name, std::string& result)
+{
+	if (!JS_IsString(value))
+	{
+		debug(LOG_ERROR, "Mission music %s must be a string", name);
+		ASSERT(false, "Mission music %s must be a string", name);
+		return false;
+	}
+	JSValue mutableValue = JS_DupValue(ctx, value);
+	result = JSValueToStdString(ctx, mutableValue);
+	JS_FreeValue(ctx, mutableValue);
+	if (result.empty())
+	{
+		debug(LOG_ERROR, "Mission music %s must not be empty", name);
+		ASSERT(false, "Mission music %s must not be empty", name);
+		return false;
+	}
+	return true;
+}
+
+static bool jsMissionMusicReadOptions(JSContext *ctx, JSValueConst value, MissionMusicJSOptions& options, bool requireVolume, bool allowLoop)
+{
+	if (JS_IsUndefined(value) || JS_IsNull(value))
+	{
+		if (requireVolume)
+		{
+			debug(LOG_ERROR, "Mission music options.volume is required");
+			ASSERT(false, "Mission music options.volume is required");
+			return false;
+		}
+		return true;
+	}
+	if (!JS_IsObject(value))
+	{
+		debug(LOG_ERROR, "Mission music options must be an object");
+		ASSERT(false, "Mission music options must be an object");
+		return false;
+	}
+
+	JSValue volumeValue = JS_GetPropertyStr(ctx, value, "volume");
+	if (!JS_IsUndefined(volumeValue))
+	{
+		double volume = 1.0;
+		if (JS_ToFloat64(ctx, &volume, volumeValue) || !std::isfinite(volume))
+		{
+			JS_FreeValue(ctx, volumeValue);
+			debug(LOG_ERROR, "Mission music options.volume must be a finite number");
+			ASSERT(false, "Mission music options.volume must be a finite number");
+			return false;
+		}
+		options.volume = volume;
+		options.hasVolume = true;
+	}
+	JS_FreeValue(ctx, volumeValue);
+	if (requireVolume && !options.hasVolume)
+	{
+		debug(LOG_ERROR, "Mission music options.volume is required");
+		ASSERT(false, "Mission music options.volume is required");
+		return false;
+	}
+
+	JSValue fadeValue = JS_GetPropertyStr(ctx, value, "fadeMs");
+	if (!JS_IsUndefined(fadeValue))
+	{
+		int32_t fadeMs = 0;
+		if (JS_ToInt32(ctx, &fadeMs, fadeValue) || fadeMs < 0)
+		{
+			JS_FreeValue(ctx, fadeValue);
+			debug(LOG_ERROR, "Mission music options.fadeMs must be a non-negative integer");
+			ASSERT(false, "Mission music options.fadeMs must be a non-negative integer");
+			return false;
+		}
+		options.fadeMs = fadeMs;
+	}
+	JS_FreeValue(ctx, fadeValue);
+
+	if (allowLoop)
+	{
+		JSValue loopValue = JS_GetPropertyStr(ctx, value, "loop");
+		if (!JS_IsUndefined(loopValue))
+		{
+			options.loop = JS_ToBool(ctx, loopValue);
+		}
+		JS_FreeValue(ctx, loopValue);
+	}
+
+	return true;
+}
+
+static JSValue js_playMissionMusicStem(JSContext *ctx, JSValueConst, int argc, JSValueConst *argv)
+{
+	if (argc < 2 || argc > 3)
+	{
+		return jsMissionMusicError(ctx, "playMissionMusicStem expects id, filename, and optional options");
+	}
+
+	std::string id;
+	std::string filename;
+	if (!jsMissionMusicReadString(ctx, argv[0], "id", id) || !jsMissionMusicReadString(ctx, argv[1], "filename", filename))
+	{
+		return JS_NewBool(ctx, false);
+	}
+
+	MissionMusicJSOptions options;
+	if (!jsMissionMusicReadOptions(ctx, argc >= 3 ? argv[2] : JS_UNDEFINED, options, false, true))
+	{
+		return JS_NewBool(ctx, false);
+	}
+
+	quickjs_execution_context execution_context(ctx);
+	return JS_NewBool(ctx, wzapi::playMissionMusicStem(execution_context, std::move(id), std::move(filename), options.volume, options.fadeMs, options.loop));
+}
+
+static JSValue js_setMissionMusicStemVolume(JSContext *ctx, JSValueConst, int argc, JSValueConst *argv)
+{
+	if (argc != 2)
+	{
+		return jsMissionMusicError(ctx, "setMissionMusicStemVolume expects id and options");
+	}
+
+	std::string id;
+	if (!jsMissionMusicReadString(ctx, argv[0], "id", id))
+	{
+		return JS_NewBool(ctx, false);
+	}
+
+	MissionMusicJSOptions options;
+	if (!jsMissionMusicReadOptions(ctx, argv[1], options, true, false))
+	{
+		return JS_NewBool(ctx, false);
+	}
+
+	quickjs_execution_context execution_context(ctx);
+	return JS_NewBool(ctx, wzapi::setMissionMusicStemVolume(execution_context, std::move(id), options.volume, options.fadeMs));
+}
+
+static JSValue js_stopMissionMusicStem(JSContext *ctx, JSValueConst, int argc, JSValueConst *argv)
+{
+	if (argc < 1 || argc > 2)
+	{
+		return jsMissionMusicError(ctx, "stopMissionMusicStem expects id and optional options");
+	}
+
+	std::string id;
+	if (!jsMissionMusicReadString(ctx, argv[0], "id", id))
+	{
+		return JS_NewBool(ctx, false);
+	}
+
+	MissionMusicJSOptions options;
+	if (!jsMissionMusicReadOptions(ctx, argc >= 2 ? argv[1] : JS_UNDEFINED, options, false, false))
+	{
+		return JS_NewBool(ctx, false);
+	}
+
+	quickjs_execution_context execution_context(ctx);
+	return JS_NewBool(ctx, wzapi::stopMissionMusicStem(execution_context, std::move(id), options.fadeMs));
+}
+
+static JSValue js_stopAllMissionMusicStems(JSContext *ctx, JSValueConst, int argc, JSValueConst *argv)
+{
+	if (argc > 1)
+	{
+		return jsMissionMusicError(ctx, "stopAllMissionMusicStems expects optional options");
+	}
+
+	MissionMusicJSOptions options;
+	if (!jsMissionMusicReadOptions(ctx, argc == 1 ? argv[0] : JS_UNDEFINED, options, false, false))
+	{
+		return JS_UNDEFINED;
+	}
+
+	quickjs_execution_context execution_context(ctx);
+	wzapi::stopAllMissionMusicStems(execution_context, options.fadeMs);
+	return JS_UNDEFINED;
+}
+
+static JSValue js_isMissionMusicStemPlaying(JSContext *ctx, JSValueConst, int argc, JSValueConst *argv)
+{
+	if (argc != 1)
+	{
+		return jsMissionMusicError(ctx, "isMissionMusicStemPlaying expects id");
+	}
+
+	std::string id;
+	if (!jsMissionMusicReadString(ctx, argv[0], "id", id))
+	{
+		return JS_NewBool(ctx, false);
+	}
+
+	quickjs_execution_context execution_context(ctx);
+	return JS_NewBool(ctx, wzapi::isMissionMusicStemPlaying(execution_context, std::move(id)));
+}
+
 static JSValue js_stats_get(JSContext *ctx, JSValueConst this_val)
 {
 	JSValue currentFuncObj = js_debugger_get_current_funcObject(ctx);
@@ -3566,6 +3776,11 @@ bool quickjs_scripting_instance::registerFunctions(const std::string& scriptName
 	JS_REGISTER_FUNC(hackDoNotSave, 1); // WZAPI
 	JS_REGISTER_FUNC(hackPlayIngameAudio, 0); // WZAPI
 	JS_REGISTER_FUNC(hackStopIngameAudio, 0); // WZAPI
+	JS_REGISTER_FUNC2(playMissionMusicStem, 2, 3); // WZAPI
+	JS_REGISTER_FUNC(setMissionMusicStemVolume, 2); // WZAPI
+	JS_REGISTER_FUNC2(stopMissionMusicStem, 1, 2); // WZAPI
+	JS_REGISTER_FUNC2(stopAllMissionMusicStems, 0, 1); // WZAPI
+	JS_REGISTER_FUNC(isMissionMusicStemPlaying, 1); // WZAPI
 
 	// General functions -- geared for use in AI scripts
 	JS_REGISTER_FUNC2(debug, 1, 1 + MAX_JS_VARARGS);

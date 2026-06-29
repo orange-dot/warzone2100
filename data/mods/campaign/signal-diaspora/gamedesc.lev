@@ -1,0 +1,18 @@
+/*
+ * GameDesc.lev
+ *
+ * Signal Diaspora technical slice.
+ */
+
+campaign	CAM_1
+data		"wrf/vidmem.wrf"
+data		"wrf/basic.wrf"
+data		"wrf/cam1.wrf"
+data		"wrf/audio.wrf"
+data		"wrf/stats.wrf"
+data		"wrf/camres.wrf"
+
+camstart	SD_A1
+dataset		CAM_1
+game		"wrf/cam1/SD_A1.gam"
+data		"wrf/cam1/SD_A1.wrf"

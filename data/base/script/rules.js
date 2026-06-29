@@ -412,6 +412,10 @@ function eventObjectTransfer(obj, from)
 	}
 }
 
+function eventAllianceAccepted(from, to)
+{
+}
+
 //Could be the last remaining trucks/commanders are on it.
 function eventTransporterLanded(transport)
 {
